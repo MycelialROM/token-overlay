@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write  # needed to create GitHub Releases
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+          - os: macos-latest
+            platform: mac
+          - os: ubuntu-latest
+            platform: linux
+
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.platform }})
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Generate placeholder icons if real ones aren't in the repo.
+      # Replace the files in assets/ with proper icons for a polished release.
+      - name: Generate placeholder icons (if missing)
+        shell: bash
+        run: node scripts/generate-icons.js
+
+      - name: Build & publish (${{ matrix.platform }})
+        run: npm run release -- --${{ matrix.platform }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Code signing (optional — remove comments and add secrets to enable)
+          # CSC_LINK:     ${{ secrets.MAC_CERT_P12_BASE64 }}
+          # CSC_KEY_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          # WIN_CSC_LINK: ${{ secrets.WIN_CERT_P12_BASE64 }}
+          # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASSWORD }}

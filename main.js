@@ -8,17 +8,16 @@ const os   = require('os');
 const { load: loadConfig } = require('./lib/config');
 const { open: openDb }     = require('./lib/db');
 const { createServer }     = require('./lib/server');
+const updater              = require('./lib/updater');
 
 nativeTheme.themeSource = 'dark';
 app.commandLine.appendSwitch('enable-transparent-visuals');
 
-// ── Constants ─────────────────────────────────────────────────────────────────
 const WINDOW_W      = 340;
 const WINDOW_H_FULL = 530;
 const WINDOW_H_MINI = 72;
 const USAGE_FILE    = path.join(os.homedir(), '.claude', 'token-usage.json');
 
-// ── App state ─────────────────────────────────────────────────────────────────
 let win        = null;
 let db         = null;
 let server     = null;
@@ -36,7 +35,6 @@ function startDemo() {
     requests: 0, model: 'claude-sonnet-4-6', context_window: 200000,
     session_start: new Date().toISOString(), demo: true,
   };
-
   push('usage-update', d);
 
   demoTimer = setInterval(() => {
@@ -52,17 +50,16 @@ function startDemo() {
   }, 2800);
 }
 
-// ─── FILE WATCHER (legacy JSON compat) ───────────────────────────────────────
+// ─── LEGACY JSON FILE WATCHER ─────────────────────────────────────────────────
 function watchLegacyFile() {
   const dir = path.join(os.homedir(), '.claude');
   try { fs.mkdirSync(dir, { recursive: true }); } catch {}
-
   try {
     dirWatcher = fs.watch(dir, (_, filename) => {
       if (filename === 'token-usage.json') readLegacyFile();
     });
   } catch (e) {
-    console.warn('[watcher] Cannot watch ~/.claude:', e.message);
+    console.warn('[watcher]', e.message);
   }
   readLegacyFile();
 }
@@ -76,7 +73,7 @@ function readLegacyFile() {
   } catch { setTimeout(readLegacyFile, 150); }
 }
 
-// ─── WINDOW ────────────────────────────────────────────────────────────────────
+// ─── WINDOW ───────────────────────────────────────────────────────────────────
 function createWindow() {
   const { width: sw } = screen.getPrimaryDisplay().workAreaSize;
 
@@ -99,24 +96,29 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
   win.webContents.once('did-finish-load', async () => {
-    // Wait for DB worker to be ready (or fall back)
-    try { await db.ready; } catch {}
+    // Wait for sql.js WASM to finish loading before using the db
+    try { await db.ready; } catch (e) {
+      console.warn('[main] DB init failed:', e.message);
+    }
 
     push('api-info', {
       tokenPrefix:   config.apiToken.slice(0, 8) + '…',
       configPath:    config.configPath,
       port:          config.port,
       usingFallback: db.usingFallback,
+      version:       app.getVersion(),
     });
 
-    // Prime the renderer with whatever is in DB already
     try {
-      const existing = await db.getLatest();
+      const existing = db.getLatest();
       if (existing) push('usage-update', existing);
     } catch {}
 
     startDemo();
     watchLegacyFile();
+
+    // Wire auto-updater after window is ready
+    updater.setup(win);
   });
 
   win.on('closed', () => { win = null; cleanup(); });
@@ -126,7 +128,7 @@ function push(channel, data) {
   if (win && !win.isDestroyed()) win.webContents.send(channel, data);
 }
 
-// ─── IPC ───────────────────────────────────────────────────────────────────────
+// ─── IPC ──────────────────────────────────────────────────────────────────────
 ipcMain.on('win-drag', (_, { dx, dy }) => {
   if (!win) return;
   const [x, y] = win.getPosition();
@@ -141,22 +143,22 @@ ipcMain.on('win-collapse', (_, collapsed) => {
 ipcMain.on('win-pin',   (_, pinned) => { win?.setAlwaysOnTop(pinned, 'screen-saver'); });
 ipcMain.on('win-close', ()          => { win?.close(); });
 
-ipcMain.handle('get-usage',    () => db.getLatest());
-ipcMain.handle('get-sessions', () => db.usingFallback ? [] : (db.allSessions?.() ?? []));
+ipcMain.handle('get-usage',    () => { try { return db.getLatest(); } catch { return null; } });
+ipcMain.handle('get-sessions', () => { try { return db.allSessions?.() ?? []; } catch { return []; } });
 
-// ─── CLEANUP ───────────────────────────────────────────────────────────────────
+ipcMain.on('install-update', () => {
+  try { require('electron-updater').autoUpdater.quitAndInstall(); } catch {}
+});
+
+// ─── CLEANUP ──────────────────────────────────────────────────────────────────
 function cleanup() {
   if (demoTimer)  { clearInterval(demoTimer); demoTimer = null; }
   if (dirWatcher) { try { dirWatcher.close(); } catch {} dirWatcher = null; }
-  if (server)     {
-    server._limiter?.destroy();
-    server.close();
-    server = null;
-  }
-  if (db) { db.close(); db = null; }
+  if (server)     { server._limiter?.destroy(); server.close(); server = null; }
+  if (db)         { db.close(); db = null; }
 }
 
-// ─── BOOTSTRAP ─────────────────────────────────────────────────────────────────
+// ─── BOOTSTRAP ───────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
   config = loadConfig();
   db     = openDb();

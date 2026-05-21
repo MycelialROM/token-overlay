@@ -3,45 +3,103 @@
   "version": "2.0.0",
   "description": "Real-time Claude token usage overlay — always on top, always watching",
   "main": "main.js",
+  "author": "MycelialROM",
+  "license": "MIT",
+  "homepage": "https://github.com/MycelialROM/token-overlay",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MycelialROM/token-overlay.git"
+  },
   "scripts": {
-    "start": "electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "start":   "electron .",
+    "pack":    "electron-builder --dir",
+    "dist":    "electron-builder",
+    "release": "electron-builder --publish always"
   },
   "dependencies": {
     "electron-updater": "^6.8.3",
-    "sql.js": "^1.14.1"
+    "sql.js":           "^1.14.1"
   },
   "devDependencies": {
-    "electron": "^30.0.0",
+    "electron":         "^30.0.0",
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.steveblatt.token-overlay",
+    "appId":       "com.mycelialrom.token-overlay",
     "productName": "Token Overlay",
+    "copyright":   "Copyright © 2026 MycelialROM",
+
+    "publish": {
+      "provider": "github",
+      "owner":    "MycelialROM",
+      "repo":     "token-overlay"
+    },
+
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/sql.js/dist/**"
+    ],
+
     "directories": {
-      "output": "dist"
+      "output":     "dist",
+      "buildResources": "assets"
     },
-    "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png"
-    },
+
     "files": [
       "main.js",
       "preload.js",
       "lib/**",
       "renderer/**",
-      "node_modules/**"
+      "node_modules/**",
+      "!node_modules/**/*.{md,markdown,txt,ts,map}",
+      "!node_modules/**/test{s,}/**",
+      "!node_modules/**/{.github,.nyc_output,coverage}/**",
+      "!node_modules/**/README*",
+      "!node_modules/**/CHANGELOG*"
     ],
-    "nativeRebuilder": "sequential",
-    "npmRebuild": true
+
+    "win": {
+      "target": [
+        { "target": "nsis",     "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick":                       false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut":          true,
+      "createStartMenuShortcut":        true,
+      "shortcutName":                   "Token Overlay"
+    },
+
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "icon":     "assets/icon.icns",
+      "category": "public.app-category.utilities",
+      "hardenedRuntime":   true,
+      "gatekeeperAssess":  false
+    },
+    "dmg": {
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    },
+
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb",      "arch": ["x64"] }
+      ],
+      "icon":     "assets/icon.png",
+      "category": "Utility"
+    },
+    "deb": {
+      "afterInstall": null
+    }
   }
 }
