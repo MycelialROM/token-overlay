@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Flow</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell" id="shell">
+
+  <!-- ── TITLE BAR ── -->
+  <div class="bar" id="bar">
+    <div class="bar-left">
+      <span class="dot" id="dot"></span>
+      <span class="bar-title">TOKEN FLOW</span>
+      <span class="demo-pill" id="demoPill">DEMO</span>
+    </div>
+    <div class="bar-right">
+      <button class="btn pin-btn" id="pinBtn" title="Keep on top">⊕</button>
+      <button class="btn" id="colBtn" title="Collapse">−</button>
+      <button class="btn x-btn" id="xBtn" title="Close">✕</button>
+    </div>
+  </div>
+
+  <!-- ── EXPANDED BODY ── -->
+  <div class="body" id="body">
+
+    <!-- Water tank -->
+    <div class="tank-wrap">
+      <div class="tank-head">
+        <div class="pct-group">
+          <span class="pct-num" id="pctNum">0</span>
+          <span class="pct-sym">%</span>
+        </div>
+        <span class="pct-label">context used</span>
+      </div>
+
+      <div class="tank" id="tank">
+        <!-- grid overlay -->
+        <div class="tank-grid"></div>
+        <!-- water fill -->
+        <div class="fill" id="fill">
+          <!-- animated waves -->
+          <div class="wave-wrap">
+            <div class="wave-row" id="waveRow1">
+              <svg class="wsv" viewBox="0 0 1440 80" preserveAspectRatio="none">
+                <path fill="rgba(0,195,255,0.55)" d="M0,40 C180,68 360,12 540,40 C720,68 900,12 1080,40 C1260,68 1440,12 1440,40 L1440,80 L0,80 Z"/>
+              </svg>
+              <svg class="wsv" viewBox="0 0 1440 80" preserveAspectRatio="none">
+                <path fill="rgba(0,195,255,0.55)" d="M0,40 C180,68 360,12 540,40 C720,68 900,12 1080,40 C1260,68 1440,12 1440,40 L1440,80 L0,80 Z"/>
+              </svg>
+            </div>
+            <div class="wave-row" id="waveRow2">
+              <svg class="wsv" viewBox="0 0 1440 80" preserveAspectRatio="none">
+                <path fill="rgba(0,220,255,0.28)" d="M0,40 C180,12 360,68 540,40 C720,12 900,68 1080,40 C1260,12 1440,68 1440,40 L1440,80 L0,80 Z"/>
+              </svg>
+              <svg class="wsv" viewBox="0 0 1440 80" preserveAspectRatio="none">
+                <path fill="rgba(0,220,255,0.28)" d="M0,40 C180,12 360,68 540,40 C720,12 900,68 1080,40 C1260,12 1440,68 1440,40 L1440,80 L0,80 Z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="fill-glow"></div>
+        </div>
+        <!-- left shine -->
+        <div class="tank-shine"></div>
+      </div>
+
+      <div class="tank-foot">
+        <span class="token-count" id="tokTotal">0</span>
+        <span class="token-sep">/</span>
+        <span class="token-count" id="tokMax">200K</span>
+        <span class="token-unit">tokens</span>
+      </div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="grid">
+      <div class="card inp">
+        <div class="card-icon">↑</div>
+        <div class="card-mid">
+          <div class="card-val" id="inpTok">0</div>
+          <div class="card-lbl">INPUT</div>
+        </div>
+        <div class="card-cost" id="inpCost">$0.0000</div>
+      </div>
+      <div class="card out">
+        <div class="card-icon">↓</div>
+        <div class="card-mid">
+          <div class="card-val" id="outTok">0</div>
+          <div class="card-lbl">OUTPUT</div>
+        </div>
+        <div class="card-cost" id="outCost">$0.0000</div>
+      </div>
+      <div class="card crd">
+        <div class="card-icon">⚡</div>
+        <div class="card-mid">
+          <div class="card-val" id="crdTok">0</div>
+          <div class="card-lbl">CACHE READ</div>
+        </div>
+        <div class="card-cost" id="crdCost">$0.0000</div>
+      </div>
+      <div class="card cwr">
+        <div class="card-icon">◈</div>
+        <div class="card-mid">
+          <div class="card-val" id="cwrTok">0</div>
+          <div class="card-lbl">CACHE WRITE</div>
+        </div>
+        <div class="card-cost" id="cwrCost">$0.0000</div>
+      </div>
+    </div>
+
+    <!-- Total cost -->
+    <div class="cost-block">
+      <div class="cost-left">
+        <div class="cost-label">SESSION COST</div>
+        <div class="cost-sub" id="reqCount">0 requests</div>
+      </div>
+      <div class="cost-val" id="costVal">$0.0000</div>
+    </div>
+
+    <!-- API info bar -->
+    <div class="api-bar" id="apiBar" title="Bearer token prefix — see config file for full token">
+      <span class="api-key">TOKEN</span>
+      <span class="api-val" id="apiToken">…</span>
+      <span class="api-sep"></span>
+      <span class="api-key">PORT</span>
+      <span class="api-val" id="apiPort">51234</span>
+      <span class="api-sep"></span>
+      <span class="api-key db-mode" id="dbMode">DB</span>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="foot-item">
+        <span class="foot-key">SESSION</span>
+        <span class="foot-val" id="sessTime">0m</span>
+      </div>
+      <div class="foot-sep"></div>
+      <div class="foot-item">
+        <span class="foot-key">MODEL</span>
+        <span class="foot-val" id="modelName">—</span>
+      </div>
+      <div class="foot-sep"></div>
+      <div class="foot-item">
+        <span class="foot-key">HTTP</span>
+        <span class="foot-val">:51234</span>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- ── COLLAPSED PILL ── -->
+  <div class="mini" id="mini">
+    <div class="mini-fill" id="miniFill"></div>
+    <span class="mini-pct" id="miniPct">0%</span>
+    <div class="mini-div"></div>
+    <span class="mini-cost" id="miniCost">$0.0000</span>
+  </div>
+
+</div><!-- /shell -->
+<script src="app.js"></script>
+</body>
+</html>
